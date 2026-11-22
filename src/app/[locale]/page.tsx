@@ -6,7 +6,8 @@ import { site, telegramHref } from "@/lib/site";
 import { CarCard } from "@/components/CarCard";
 import { Icon } from "@/components/Icon";
 
-export const dynamic = "force-dynamic";
+// Sahifa oldindan tayyorlanadi; admin o'zgartirganda darhol yangilanadi
+export const revalidate = 3600;
 
 export default async function Home({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;

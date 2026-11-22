@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import "../globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { getDict, isLocale } from "@/lib/i18n";
+import { getDict, isLocale, locales } from "@/lib/i18n";
+
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -32,7 +36,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&icon_names=account_balance_wallet,add,airline_seat_recline_normal,arrow_forward,arrow_outward,badge,bolt,calendar_month,calendar_today,call,check,chevron_right,description,directions_car,edit,event_available,event_note,gavel,group,home,insights,key,local_gas_station,local_shipping,location_on,logout,map,notifications_active,person,photo_camera,receipt_long,schedule,search,search_off,sell,send,settings,speed,storefront,support_agent,timer,today,verified_user,work,workspace_premium&display=block" rel="stylesheet" />
       </head>
       <body className="min-h-dvh">
         <Header locale={locale} t={t} />

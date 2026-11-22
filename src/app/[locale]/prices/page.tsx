@@ -6,7 +6,8 @@ import { getDict, type Locale } from "@/lib/i18n";
 import { formatSum } from "@/lib/format";
 import { Icon } from "@/components/Icon";
 
-export const dynamic = "force-dynamic";
+// Sahifa oldindan tayyorlanadi; admin o'zgartirganda darhol yangilanadi
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;

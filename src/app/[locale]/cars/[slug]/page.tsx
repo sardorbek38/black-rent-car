@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -10,7 +11,12 @@ import { CarCard, Price } from "@/components/CarCard";
 import { Gallery } from "@/components/Gallery";
 import { Icon } from "@/components/Icon";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const cars = await prisma.car.findMany({ where: { isVisible: true }, select: { slug: true } });
+  return cars.map((c) => ({ slug: c.slug }));
+}
 
 type Params = Promise<{ locale: Locale; slug: string }>;
 
@@ -25,9 +31,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function CarPage({ params, searchParams }: { params: Params; searchParams: Promise<{ start?: string; end?: string }> }) {
+export default async function CarPage({ params }: { params: Params }) {
   const { locale, slug } = await params;
-  const sp = await searchParams;
   const t = getDict(locale);
   const car = await prisma.car.findUnique({ where: { slug } });
   if (!car || !car.isVisible) notFound();
@@ -131,7 +136,9 @@ export default async function CarPage({ params, searchParams }: { params: Params
             </div>
 
             <div className="my-5 border-t border-line" />
-            <BookingForm car={car} locale={locale} t={t} start={sp.start} end={sp.end} />
+            <Suspense fallback={<div className="h-[560px] animate-pulse rounded-xl bg-raised/50" />}>
+              <BookingForm car={{ id: car.id, pricePerDay: car.pricePerDay, price3Days: car.price3Days, price7Days: car.price7Days }} locale={locale} t={t} />
+            </Suspense>
           </div>
           <a href={site.phoneHref} className="btn-ghost mt-3 w-full !normal-case !tracking-normal"><Icon name="call" className="!text-[18px] text-gold" />{t.common.call}: {site.phone}</a>
         </aside>

@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Dict, Locale } from "@/lib/i18n";
 import { dailyRate, formatSum, rentalDays } from "@/lib/format";
 import { Icon } from "./Icon";
@@ -24,8 +24,11 @@ function formatPhoneInput(v: string) {
   return parts.join(" ");
 }
 
-export function BookingForm({ car, locale, t, start, end }: { car: CarPrices; locale: Locale; t: Dict; start?: string; end?: string }) {
+export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale; t: Dict }) {
   const router = useRouter();
+  const sp = useSearchParams();
+  const start = sp.get("start") ?? undefined;
+  const end = sp.get("end") ?? undefined;
   const f = t.form;
   const [form, setForm] = useState({
     name: "", phone: "", startAt: initial(start, 1), endAt: initial(end, 2),
