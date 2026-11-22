@@ -54,9 +54,9 @@ export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; 
           const top = diff === 0 ? t.form.today : diff === 1 ? t.form.tomorrow : WEEK[locale][d.getDay()];
           return (
             <Pressable key={d.toISOString()} onPress={() => pickDay(d)} style={[st.day, active && st.active]}>
-              <Text style={[st.dayTop, active && { color: c.ink }]} numberOfLines={1}>{top}</Text>
-              <Text style={[st.dayNum, active && { color: c.ink }]}>{d.getDate()}</Text>
-              <Text style={[st.dayTop, active && { color: c.ink }]}>{MONTH[locale][d.getMonth()]}</Text>
+              <Text style={[st.dayTop, active && { color: c.onPrimary }]} numberOfLines={1}>{top}</Text>
+              <Text style={[st.dayNum, active && { color: c.onPrimary }]}>{d.getDate()}</Text>
+              <Text style={[st.dayTop, active && { color: c.onPrimary }]}>{MONTH[locale][d.getMonth()]}</Text>
             </Pressable>
           );
         })}
@@ -67,7 +67,7 @@ export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; 
           const past = sameDay(value, now) && h <= now.getHours();
           return (
             <Pressable key={h} disabled={past} onPress={() => pickHour(h)} style={[st.hour, active && st.active, past && { opacity: 0.3 }]}>
-              <Text style={[st.hourText, active && { color: c.ink }]}>{String(h).padStart(2, "0")}:00</Text>
+              <Text style={[st.hourText, active && { color: c.onPrimary }]}>{String(h).padStart(2, "0")}:00</Text>
             </Pressable>
           );
         })}
@@ -77,10 +77,10 @@ export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; 
 }
 
 const st = StyleSheet.create({
-  day: { width: DAY_W, alignItems: "center", paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.ink, gap: 1 },
-  active: { backgroundColor: c.gold, borderColor: c.gold },
-  dayTop: { fontFamily: f.body, fontSize: 11, color: c.dim },
-  dayNum: { fontFamily: f.display, fontSize: 18, color: c.fg },
-  hour: { width: HOUR_W, alignItems: "center", paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: c.line, backgroundColor: c.ink },
-  hourText: { fontFamily: f.bodySemi, fontSize: 13, color: c.fg },
+  day: { width: DAY_W, alignItems: "center", paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: c.high, backgroundColor: c.low, gap: 1 },
+  active: { backgroundColor: c.primary, borderColor: c.primary },
+  dayTop: { fontFamily: f.body, fontSize: 11, color: c.outline },
+  dayNum: { fontFamily: f.display, fontSize: 18, color: c.onSurface },
+  hour: { width: HOUR_W, alignItems: "center", paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: c.high, backgroundColor: c.low },
+  hourText: { fontFamily: f.bodySemi, fontSize: 13, color: c.onSurface },
 });

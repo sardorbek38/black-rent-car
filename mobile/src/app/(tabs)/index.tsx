@@ -2,121 +2,138 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CarCard } from "../../components/CarCard";
-import { LangSwitch } from "../../components/LangSwitch";
+import { CarouselCard } from "../../components/CarCards";
+import { BrandHeader } from "../../components/Header";
 import { OfflineBanner } from "../../components/OfflineBanner";
-import { Body, Card, GhostButton, GoldButton, H1, H2, Icon, Kicker, type IconName } from "../../components/ui";
+import { TAB_BAR_SPACE } from "../../components/TabBar";
+import { DarkButton, Dot, GlassBadge, GoldButton, Icon, type IconName } from "../../components/ui";
 import { carImage } from "../../lib/images";
 import { site } from "../../lib/site";
 import { useStore } from "../../lib/store";
-import { c, f } from "../../lib/theme";
+import { c, f, t } from "../../lib/theme";
 
 export default function Home() {
-  const { t, cars, loading, refresh } = useStore();
-  const insets = useSafeAreaInsets();
+  const { t: d, cars, loading, refresh } = useStore();
   const hero = cars.find((x) => x.slug === "byd-han") ?? cars[0];
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.ink }}
-      contentContainerStyle={{ paddingBottom: 32 }}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={c.gold} />}
-    >
-      {/* Hero */}
-      <View style={{ paddingTop: insets.top }}>
-        <View style={st.topBar}>
-          <View style={st.brand}>
-            <Image source={require("../../../assets/logo.png")} style={{ width: 34, height: 34 }} />
-            <Text style={st.brandText}>BLACK RENT CAR</Text>
-          </View>
-          <LangSwitch />
-        </View>
-        <View style={st.heroImg}>
-          {hero && <Image source={carImage(hero.images[0])} style={StyleSheet.absoluteFill} contentFit="cover" />}
-          <LinearGradient colors={["rgba(10,10,10,0.1)", "rgba(10,10,10,0.35)", c.ink]} style={StyleSheet.absoluteFill} />
-        </View>
-        <View style={st.heroText}>
-          <View style={st.pill}>
-            <View style={st.dot} />
-            <Text style={st.pillText}>{t.home.badge}</Text>
-          </View>
-          <H1>
-            {t.home.titleA}{"\n"}
-            <Text style={{ color: c.gold }}>{t.home.titleB}</Text>
-          </H1>
-          <Body>{t.home.lead}</Body>
-          <View style={{ gap: 10, marginTop: 6 }}>
-            <GoldButton label={t.home.choose} icon="directions-car" onPress={() => router.push("/cars")} />
-            <GhostButton label={t.common.call} icon="call" onPress={() => Linking.openURL(site.phoneHref)} />
-          </View>
-        </View>
-      </View>
-
-      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-        <OfflineBanner />
-      </View>
-
-      {/* Afzalliklar */}
-      <View style={{ paddingHorizontal: 20, gap: 10, marginTop: 20 }}>
-        {t.home.why.map((w) => (
-          <Card key={w.title} style={st.why}>
-            <View style={st.whyIcon}><Icon name={w.icon as IconName} size={22} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={st.whyTitle}>{w.title}</Text>
-              <Body style={{ fontSize: 13.5, lineHeight: 19 }}>{w.text}</Body>
+    <View style={{ flex: 1, backgroundColor: c.surface }}>
+      <BrandHeader />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={c.primary} />}
+      >
+        {/* Salomlashish */}
+        <View style={[s.px, { paddingTop: 16, paddingBottom: 8, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }]}>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <Dot />
+              <Text style={[t.labelSm, { fontFamily: f.display, color: c.primary, textTransform: "uppercase", letterSpacing: 1.6 }]}>{d.home.kicker}</Text>
             </View>
-          </Card>
-        ))}
-      </View>
-
-      {/* Avtopark */}
-      <View style={st.sectionHead}>
-        <View>
-          <Kicker>{t.home.fleetKicker}</Kicker>
-          <H2 style={{ marginTop: 4 }}>{t.home.fleetTitle}</H2>
+            <Text style={t.headlineLgMobile}>{d.home.title}</Text>
+            <Text style={[t.bodySm, { marginTop: 4 }]}>{d.home.sub}</Text>
+          </View>
+          <View style={s.glassPill}>
+            <Icon name="verified" size={16} />
+            <Text style={[t.labelSm, { fontFamily: f.bodySemi, color: c.onSurface }]}>{cars.length} {d.home.carsBadge}</Text>
+          </View>
         </View>
-        <Pressable onPress={() => router.push("/cars")} style={st.more} hitSlop={8}>
-          <Text style={st.moreText}>{t.home.allCars}</Text>
-          <Icon name="chevron-right" size={18} />
-        </Pressable>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-        {cars.map((car) => <CarCard key={car.slug} car={car} t={t} compact />)}
+
+        {/* Katta promo karta */}
+        <View style={[s.px, { paddingVertical: 8 }]}>
+          <View style={s.promo}>
+            <View style={{ height: 224 }}>
+              {hero ? <Image source={carImage(hero.images[0])} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
+              <LinearGradient colors={["transparent", "rgba(14,14,14,0.6)", c.lowest]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+              <View style={{ position: "absolute", top: 14, left: 14 }}>
+                <GlassBadge label={d.home.promoBadge} icon="star" />
+              </View>
+              <View style={{ position: "absolute", left: 14, right: 14, bottom: 14 }}>
+                <Text style={t.headlineMd}>{d.home.promoTitle}</Text>
+                <Text style={[t.bodySm, { marginTop: 4 }]} numberOfLines={2}>{d.home.promoText}</Text>
+              </View>
+            </View>
+            <View style={s.promoFoot}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={s.circle32}><Icon name="bolt" size={18} /></View>
+                <Text style={[t.labelSm, { fontSize: 11, letterSpacing: 0.4 }]}>{d.home.fast}</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={[t.labelSm, { fontSize: 11, letterSpacing: 0.4, color: c.primary }]}>{d.home.city}</Text>
+                <Icon name="pin-drop" size={16} />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Tezkor tugmalar */}
+        <View style={[s.px, { paddingVertical: 8, flexDirection: "row", gap: 12 }]}>
+          <GoldButton label={d.common.call} icon="call" style={{ flex: 1 }} onPress={() => Linking.openURL(site.phoneHref)} />
+          {site.telegram ? (
+            <DarkButton label="Telegram" icon="send" style={{ flex: 1 }} onPress={() => Linking.openURL(`https://t.me/${site.telegram}`)} />
+          ) : (
+            <DarkButton label="Instagram" icon="photo-camera" style={{ flex: 1 }} onPress={() => Linking.openURL(site.instagramHref)} />
+          )}
+        </View>
+
+        {/* Afzalliklar */}
+        <View style={[s.px, { paddingVertical: 8, flexDirection: "row", gap: 8 }]}>
+          {d.home.stats.map((x) => (
+            <View key={x.title} style={s.stat}>
+              <Icon name={x.icon as IconName} size={20} style={{ marginBottom: 4 }} />
+              <Text style={[t.labelSm, { fontFamily: f.display, fontSize: 11 }]} numberOfLines={1}>{x.title}</Text>
+              <Text style={[t.labelSm, { fontSize: 9, color: c.onVariant, textTransform: "uppercase", marginTop: 2 }]} numberOfLines={1}>{x.sub}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={[s.px, { marginTop: 8 }]}><OfflineBanner /></View>
+
+        {/* Ommabop avtomobillar */}
+        <View style={[s.px, { paddingTop: 16, paddingBottom: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
+            <Text style={[t.headlineSm, { flexShrink: 1 }]} numberOfLines={1}>{d.home.popular}</Text>
+            <Text style={s.countChip}>{cars.length}</Text>
+          </View>
+          <Pressable onPress={() => router.push("/cars")} style={{ flexDirection: "row", alignItems: "center" }} hitSlop={8}>
+            <Text style={[t.labelMd, { color: c.primary }]}>{d.home.all}</Text>
+            <Icon name="chevron-right" size={16} />
+          </Pressable>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={294} decelerationRate="fast" contentContainerStyle={{ paddingLeft: 16, paddingRight: 16, paddingVertical: 8, gap: 14 }}>
+          {cars.map((car) => <CarouselCard key={car.slug} car={car} d={d} />)}
+        </ScrollView>
+
+        {/* Maxsus talablar */}
+        <View style={[s.px, { paddingTop: 12, paddingBottom: 24 }]}>
+          <View style={s.help}>
+            <View style={{ flexDirection: "row", gap: 14 }}>
+              <View style={[s.circle32, { width: 44, height: 44, borderRadius: 22, backgroundColor: c.high }]}><Icon name="diversity-3" size={22} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={[t.headlineSm, { fontFamily: f.display, fontSize: 15, lineHeight: 20 }]}>{d.home.helpTitle}</Text>
+                <Text style={[t.bodySm, { fontSize: 12, lineHeight: 17, marginTop: 2 }]}>{d.home.helpText}</Text>
+                <Pressable onPress={() => Linking.openURL(site.phoneHref)} style={s.helpBtn}>
+                  <Text style={[t.labelSm, { fontFamily: f.display, color: c.primary, textTransform: "uppercase" }]}>{d.home.helpBtn}</Text>
+                  <Icon name="arrow-forward" size={14} />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
       </ScrollView>
-
-      {/* Qanday ishlaydi */}
-      <View style={{ paddingHorizontal: 20, marginTop: 32, gap: 12 }}>
-        <H2>{t.home.howTitle}</H2>
-        {t.home.how.map((h, i) => (
-          <View key={h.title} style={st.step}>
-            <Text style={st.stepNum}>{i + 1}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={st.whyTitle}>{h.title}</Text>
-              <Body style={{ fontSize: 13.5, lineHeight: 19 }}>{h.text}</Body>
-            </View>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
-const st = StyleSheet.create({
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 10, zIndex: 2 },
-  brand: { flexDirection: "row", alignItems: "center", gap: 10 },
-  brandText: { fontFamily: f.display, fontSize: 13, letterSpacing: 1.5, color: c.fg },
-  heroImg: { height: 230, marginTop: 4 },
-  heroText: { paddingHorizontal: 20, gap: 14, marginTop: -30 },
-  pill: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", borderRadius: 999, borderWidth: 1, borderColor: "rgba(201,164,92,0.35)", backgroundColor: "rgba(201,164,92,0.1)", paddingHorizontal: 12, paddingVertical: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.gold },
-  pillText: { fontFamily: f.bodySemi, fontSize: 12, color: c.goldLight },
-  why: { flexDirection: "row", gap: 14, padding: 16, alignItems: "center" },
-  whyIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: "rgba(201,164,92,0.12)", alignItems: "center", justifyContent: "center" },
-  whyTitle: { fontFamily: f.displaySemi, fontSize: 15, color: c.fg, marginBottom: 2 },
-  sectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, marginTop: 32, marginBottom: 14 },
-  more: { flexDirection: "row", alignItems: "center" },
-  moreText: { fontFamily: f.bodySemi, fontSize: 13, color: c.gold },
-  step: { flexDirection: "row", gap: 14, alignItems: "flex-start", backgroundColor: c.card, borderRadius: 18, borderWidth: 1, borderColor: c.line, padding: 16 },
-  stepNum: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.gold, color: c.ink, textAlign: "center", lineHeight: 32, fontFamily: f.display, fontSize: 14, overflow: "hidden" },
+const s = StyleSheet.create({
+  px: { paddingHorizontal: 16 },
+  glassPill: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  promo: { borderRadius: 16, overflow: "hidden", backgroundColor: c.low },
+  promoFoot: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 14, backgroundColor: c.low },
+  circle32: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.highest, alignItems: "center", justifyContent: "center" },
+  stat: { flex: 1, backgroundColor: c.low, borderRadius: 12, padding: 10, alignItems: "center", justifyContent: "center" },
+  countChip: { ...t.labelSm, fontFamily: f.display, color: c.primary, backgroundColor: c.high, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: "hidden" },
+  help: { backgroundColor: c.low, borderRadius: 16, padding: 16, overflow: "hidden" },
+  glow: { position: "absolute", right: -24, bottom: -24, width: 112, height: 112, borderRadius: 56, backgroundColor: "rgba(232,193,118,0.08)" },
+  helpBtn: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12, backgroundColor: c.high, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
 });

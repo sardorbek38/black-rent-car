@@ -1,33 +1,42 @@
 import { Image } from "expo-image";
-import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useMemo, useState, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { DatePick } from "../../components/DatePick";
-import { Card, GoldButton, Icon, Kicker, type IconName } from "../../components/ui";
+import { priceText } from "../../components/CarCards";
+import { DateSheet } from "../../components/DateSheet";
+import { BackHeader } from "../../components/Header";
+import { GoldButton, Icon, type IconName } from "../../components/ui";
 import { createBooking, fetchCar, type BookingError } from "../../lib/api";
 import { formatPhoneLocal, formatSum, rentalDays, totalPrice } from "../../lib/format";
 import { carImage } from "../../lib/images";
 import { useStore } from "../../lib/store";
-import { c, f } from "../../lib/theme";
+import { c, f, t } from "../../lib/theme";
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:00`;
 
 function defaultStart() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 10, 0);
 }
 
-function Label({ children, extra }: { children: string; extra?: string }) {
+function Field({ label, extra, children, error }: { label: string; extra?: string; children: ReactNode; error?: string | null }) {
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-      <Text style={st.label}>{children}</Text>
-      {extra ? <Text style={st.extra}>{extra}</Text> : null}
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={s.label} numberOfLines={1}>{label}</Text>
+        {extra ? <Text style={[t.labelSm, { color: c.outline }]}>{extra}</Text> : null}
+      </View>
+      {children}
+      {error ? <Text style={s.err}>{error}</Text> : null}
     </View>
   );
 }
 
 export default function Book() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { t, locale, cars } = useStore();
+  const { t: d, locale, cars } = useStore();
   const insets = useSafeAreaInsets();
   const car = cars.find((x) => x.slug === slug);
 
@@ -35,21 +44,24 @@ export default function Book() {
   const [phone, setPhone] = useState("");
   const [start, setStart] = useState(defaultStart);
   const [end, setEnd] = useState(() => new Date(defaultStart().getTime() + 86_400_000));
-  const [pickup, setPickup] = useState<"OFFICE" | "DELIVERY">("OFFICE");
+  const [sheet, setSheet] = useState<"start" | "end" | null>(null);
+  const [pickup, setPickup] = useState<"OFFICE" | "DELIVERY">("DELIVERY");
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
   const [error, setError] = useState<BookingError | null>(null);
   const [sending, setSending] = useState(false);
-
-  const days = rentalDays(start, end);
-  const total = car ? totalPrice(car, days) : null;
   const today = useMemo(() => new Date(), []);
 
-  if (!car) return null;
+  if (!car) return <View style={{ flex: 1, backgroundColor: c.surface }}><BackHeader title={d.form.title} /></View>;
 
-  const changeStart = (d: Date) => {
-    setStart(d);
-    if (end <= d) setEnd(new Date(d.getTime() + 86_400_000));
+  const days = rentalDays(start, end);
+  const total = totalPrice(car, days);
+  const tbd = d.common.tbd;
+  const errText = (k: BookingError) => (error === k ? d.form.errors[k] : null);
+
+  const changeStart = (v: Date) => {
+    setStart(v);
+    if (end <= v) setEnd(new Date(v.getTime() + 86_400_000));
   };
 
   const submit = async () => {
@@ -63,7 +75,6 @@ export default function Book() {
     setError(null);
     setSending(true);
     try {
-      // Zaxira ro'yxatda id bo'lmaydi: saytdan olib kelamiz
       const carId = car.id ?? (await fetchCar(car.slug).catch(() => null))?.id;
       if (!carId) return setError("network");
       const res = await createBooking({
@@ -74,9 +85,8 @@ export default function Book() {
       router.replace({
         pathname: "/done",
         params: {
-          code: res.code, car: `${car.brand} ${car.model}`, slug: car.slug, start: start.toISOString(), end: end.toISOString(),
-          days: String(days), pickup, address: address.trim(), name: name.trim(), phone: `+998 ${formatPhoneLocal(digits)}`,
-          total: total ? String(total) : "",
+          code: res.code, slug: car.slug, start: start.toISOString(), end: end.toISOString(), days: String(days), pickup,
+          address: address.trim(), name: name.trim(), phone: `+998 ${formatPhoneLocal(digits)}`, total: total ? String(total) : "",
         },
       });
     } finally {
@@ -84,142 +94,176 @@ export default function Book() {
     }
   };
 
-  const fieldErr = (k: BookingError) => (error === k ? <Text style={st.err}>{t.form.errors[k]}</Text> : null);
+  const choices: ["OFFICE" | "DELIVERY", IconName, string][] = [
+    ["DELIVERY", "local-shipping", d.form.delivery],
+    ["OFFICE", "storefront", d.form.office],
+  ];
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.ink }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: t.form.title }} />
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: insets.bottom + 32 }} keyboardShouldPersistTaps="handled">
-        {/* Mashina */}
-        <Card style={st.carRow}>
-          <Image source={carImage(car.images[0])} style={st.thumb} contentFit="cover" />
-          <View style={{ flex: 1 }}>
-            <Kicker style={{ fontSize: 10 }}>{t.carClass[car.carClass]}</Kicker>
-            <Text style={st.carName}>{car.brand} {car.model}</Text>
-            <Text style={st.carPrice}>{car.pricePerDay ? `${formatSum(car.pricePerDay)} ${t.common.perDay}` : t.common.priceOnRequest}</Text>
+    <View style={{ flex: 1, backgroundColor: c.surface }}>
+      <BackHeader title={d.form.title} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 32 }} keyboardShouldPersistTaps="handled">
+          {/* Tanlangan mashina */}
+          <View style={s.carCard}>
+            <Image source={carImage(car.images[0])} style={s.thumb} contentFit="cover" />
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <Text style={[t.headlineSm, { fontFamily: f.display, fontSize: 17, lineHeight: 21 }]} numberOfLines={2}>{car.brand} {car.model}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={s.classTag}>{d.carClass[car.carClass]}</Text>
+                <Icon name="verified" size={13} />
+                <Text style={[t.labelSm, { color: c.onVariant }]}>{d.bodyType[car.bodyType]}</Text>
+              </View>
+              <Text style={[t.labelLg, { fontFamily: f.displaySemi, color: c.primary }]} numberOfLines={1}>{priceText(car.pricePerDay, d)}</Text>
+            </View>
           </View>
-        </Card>
 
-        <View>
-          <Label>{t.form.name}</Label>
-          <View style={[st.input, error === "name" && st.inputErr]}>
-            <Icon name="person-outline" color={c.dim} />
-            <TextInput value={name} onChangeText={setName} placeholder={t.form.namePh} placeholderTextColor={c.dim} style={st.text} autoComplete="name" textContentType="name" maxLength={80} />
-          </View>
-          {fieldErr("name")}
-        </View>
+          <Field label={d.form.name} error={errText("name")}>
+            <View style={[s.input, error === "name" && s.inputErr]}>
+              <Icon name="person" size={20} color={c.outline} />
+              <TextInput value={name} onChangeText={setName} placeholder={d.form.namePh} placeholderTextColor={c.outline} style={s.text} autoComplete="name" textContentType="name" maxLength={80} />
+            </View>
+          </Field>
 
-        <View>
-          <Label>{t.form.phone}</Label>
-          <View style={[st.input, error === "phone" && st.inputErr]}>
-            <Text style={st.prefix}>+998</Text>
-            <TextInput
-              value={formatPhoneLocal(phone)}
-              onChangeText={(v) => setPhone(v.replace(/\D/g, "").replace(/^998(?=\d{9})/, "").slice(0, 9))}
-              placeholder="90 123 45 67"
-              placeholderTextColor={c.dim}
-              keyboardType="phone-pad"
-              style={st.text}
-              autoComplete="tel"
-              textContentType="telephoneNumber"
-            />
-          </View>
-          {fieldErr("phone")}
-        </View>
+          <Field label={d.form.phone} error={errText("phone")}>
+            <View style={[s.input, error === "phone" && s.inputErr]}>
+              <Text style={{ fontSize: 18 }}>🇺🇿</Text>
+              <Text style={[t.labelMd, { fontFamily: f.display, color: c.primary }]}>+998</Text>
+              <TextInput
+                value={formatPhoneLocal(phone)}
+                onChangeText={(v) => setPhone(v.replace(/\D/g, "").replace(/^998(?=\d{9})/, "").slice(0, 9))}
+                placeholder="90 123 45 67"
+                placeholderTextColor={c.outline}
+                keyboardType="phone-pad"
+                style={[s.text, { marginLeft: 6 }]}
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+              />
+            </View>
+          </Field>
 
-        <View>
-          <Label>{t.form.start}</Label>
-          <DatePick value={start} onChange={changeStart} minDay={today} locale={locale} t={t} />
-          {fieldErr("past")}
-        </View>
-
-        <View>
-          <Label>{t.form.end}</Label>
-          <DatePick value={end} onChange={setEnd} minDay={start} locale={locale} t={t} />
-          {fieldErr("dates")}
-        </View>
-
-        <View>
-          <Label>{t.form.pickup}</Label>
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {([["OFFICE", "storefront", t.form.office], ["DELIVERY", "local-shipping", t.form.delivery]] as const).map(([k, icon, label]) => (
-              <Pressable key={k} onPress={() => setPickup(k)} style={[st.option, pickup === k && st.optionActive]}>
-                <Icon name={icon as IconName} color={pickup === k ? c.gold : c.muted} size={20} />
-                <Text style={[st.optionText, pickup === k && { color: c.gold }]}>{label}</Text>
-              </Pressable>
+            {([["start", d.form.start, "calendar-month", start], ["end", d.form.end, "event-available", end]] as const).map(([k, label, icon, v]) => (
+              <View key={k} style={{ flex: 1 }}>
+                <Field label={label}>
+                  <Pressable onPress={() => setSheet(k)} style={[s.input, s.dateInput, ((k === "end" && error === "dates") || (k === "start" && error === "past")) && s.inputErr]}>
+                    <Icon name={icon} size={18} color={c.outline} />
+                    <Text style={[t.bodySm, { color: c.onSurface, flex: 1 }]} numberOfLines={1}>{fmt(v)}</Text>
+                  </Pressable>
+                </Field>
+              </View>
             ))}
           </View>
-          {pickup === "DELIVERY" && (
-            <View style={{ marginTop: 10 }}>
-              <View style={[st.input, error === "address" && st.inputErr]}>
-                <Icon name="location-on" color={c.dim} />
-                <TextInput value={address} onChangeText={setAddress} placeholder={t.form.addressPh} placeholderTextColor={c.dim} style={st.text} maxLength={200} />
-              </View>
-              {fieldErr("address")}
+          {errText("dates") || errText("past") ? <Text style={[s.err, { marginTop: -10 }]}>{errText("dates") ?? errText("past")}</Text> : null}
+
+          <Field label={d.form.pickup}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {choices.map(([k, icon, label]) => {
+                const active = pickup === k;
+                return (
+                  <Pressable key={k} onPress={() => setPickup(k)} style={[s.choice, active && s.choiceActive]}>
+                    <Icon name={icon} size={19} color={active ? c.primary : c.onVariant} />
+                    <Text style={[t.labelLg, { color: active ? c.primary : c.onVariant, flexShrink: 1 }]} numberOfLines={2}>{label}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
+          </Field>
+
+          {pickup === "DELIVERY" && (
+            <Field label={d.form.address} error={errText("address")}>
+              <View style={[s.input, error === "address" && s.inputErr]}>
+                <Icon name="location-on" size={20} color={c.outline} />
+                <TextInput value={address} onChangeText={setAddress} placeholder={d.form.addressPh} placeholderTextColor={c.outline} style={s.text} maxLength={200} />
+              </View>
+            </Field>
           )}
-        </View>
 
-        <View>
-          <Label extra={t.form.optional}>{t.form.comment}</Label>
-          <TextInput
-            value={comment}
-            onChangeText={setComment}
-            placeholder={t.form.commentPh}
-            placeholderTextColor={c.dim}
-            multiline
-            maxLength={500}
-            style={[st.input, st.text, { minHeight: 84, textAlignVertical: "top", paddingTop: 14 }]}
+          <Field label={d.form.comment} extra={d.form.optional}>
+            <TextInput
+              value={comment}
+              onChangeText={setComment}
+              placeholder={d.form.commentPh}
+              placeholderTextColor={c.outline}
+              multiline
+              maxLength={500}
+              style={[s.input, s.text, { minHeight: 76, textAlignVertical: "top", paddingTop: 12, paddingHorizontal: 16 }]}
+            />
+          </Field>
+
+          {/* Hisob-kitob */}
+          <View style={s.summary}>
+            <View style={s.sumRow}>
+              <Text style={t.bodySm}>{days} {d.form.rent}</Text>
+              <Text style={[t.labelMd, { letterSpacing: 0.2 }]}>{total ? `${formatSum(total)} ${d.common.sum}` : d.form.managerSays}</Text>
+            </View>
+            {pickup === "DELIVERY" && (
+              <View style={s.sumRow}>
+                <Text style={t.bodySm}>{d.form.deliveryFee}</Text>
+                <Text style={[t.labelMd, { color: c.secondary, letterSpacing: 0.2 }]}>{tbd}</Text>
+              </View>
+            )}
+            <View style={s.sumRow}>
+              <Text style={t.bodySm}>{d.form.deposit}</Text>
+              <Text style={[t.labelMd, { letterSpacing: 0.2 }]}>{car.deposit ? `${formatSum(car.deposit)} ${d.common.sum}` : tbd}</Text>
+            </View>
+            <View style={{ height: 1, backgroundColor: c.high, marginVertical: 2 }} />
+            <View style={s.sumRow}>
+              <Text style={[t.labelLg, { fontFamily: f.displaySemi, textTransform: "uppercase" }]}>{d.form.total}</Text>
+              <Text style={[t.headlineSm, { fontFamily: f.display, color: c.primary, letterSpacing: -0.2 }]}>{total ? `${formatSum(total)} ${d.common.sum}` : d.form.managerSays}</Text>
+            </View>
+          </View>
+
+          {error && ["rate", "server", "network"].includes(error) ? (
+            <View style={s.alert}>
+              <Icon name="error-outline" color={c.error} />
+              <Text style={[s.err, { marginTop: 0, flex: 1 }]}>{d.form.errors[error]}</Text>
+            </View>
+          ) : null}
+
+          <GoldButton
+            label={(sending ? d.form.sending : d.form.submit).toUpperCase()}
+            iconRight={sending ? undefined : "arrow-forward"}
+            loading={sending}
+            onPress={submit}
+            height={54}
+            textStyle={{ letterSpacing: 1.2 }}
+            style={{ marginTop: 4 }}
           />
-        </View>
-
-        <Card style={{ padding: 16, gap: 12 }}>
-          <View style={st.sumRow}>
-            <Text style={st.sumLabel}>{t.form.days}</Text>
-            <Text style={st.sumValue}>{days} {t.form.dayUnit}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 16 }}>
+            <Icon name="verified-user" size={17} />
+            <Text style={[t.bodySm, { textAlign: "center", flexShrink: 1 }]}>{d.form.note}</Text>
           </View>
-          <View style={[st.sumRow, { borderTopWidth: 1, borderTopColor: c.line, paddingTop: 12 }]}>
-            <Text style={st.label}>{t.form.total}</Text>
-            <Text style={st.total}>{total ? `${formatSum(total)} ${t.common.sum}` : t.form.totalTbd}</Text>
-          </View>
-        </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-        {error && ["rate", "server", "network"].includes(error) ? (
-          <View style={st.alert}>
-            <Icon name="error-outline" color={c.danger} />
-            <Text style={[st.err, { marginTop: 0, flex: 1 }]}>{t.form.errors[error]}</Text>
-          </View>
-        ) : null}
-
-        <GoldButton label={sending ? t.form.sending : t.form.submit} icon={sending ? undefined : "arrow-forward"} loading={sending} onPress={submit} />
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Icon name="verified-user" size={16} />
-          <Text style={st.note}>{t.form.note}</Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <DateSheet
+        visible={sheet !== null}
+        title={sheet === "end" ? d.form.end : d.form.start}
+        value={sheet === "end" ? end : start}
+        onChange={sheet === "end" ? setEnd : changeStart}
+        onClose={() => setSheet(null)}
+        minDay={sheet === "end" ? start : today}
+        locale={locale}
+        d={d}
+      />
+    </View>
   );
 }
 
-const st = StyleSheet.create({
-  carRow: { flexDirection: "row", alignItems: "center", gap: 14, padding: 10 },
-  thumb: { width: 104, height: 62, borderRadius: 12, backgroundColor: c.raised },
-  carName: { fontFamily: f.displaySemi, fontSize: 16, color: c.fg, marginTop: 2 },
-  carPrice: { fontFamily: f.bodySemi, fontSize: 13, color: c.gold, marginTop: 2 },
-  label: { fontFamily: f.display, fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", color: c.muted },
-  extra: { fontFamily: f.body, fontSize: 11, color: c.dim },
-  input: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.card, paddingHorizontal: 14, minHeight: 52 },
-  inputErr: { borderColor: c.danger },
-  text: { flex: 1, fontFamily: f.body, fontSize: 16, color: c.fg, paddingVertical: 12 },
-  prefix: { fontFamily: f.bodySemi, fontSize: 16, color: c.gold },
-  err: { fontFamily: f.body, fontSize: 12.5, color: c.danger, marginTop: 6 },
-  option: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.card, padding: 14 },
-  optionActive: { borderColor: c.gold, backgroundColor: "rgba(201,164,92,0.1)" },
-  optionText: { flex: 1, fontFamily: f.bodySemi, fontSize: 13, color: c.muted },
-  sumRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sumLabel: { fontFamily: f.body, fontSize: 14, color: c.muted },
-  sumValue: { fontFamily: f.bodySemi, fontSize: 14, color: c.fg },
-  total: { fontFamily: f.display, fontSize: 18, color: c.gold },
-  alert: { flexDirection: "row", gap: 8, alignItems: "center", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,180,171,0.3)", backgroundColor: "rgba(255,180,171,0.08)", padding: 12 },
-  note: { flex: 1, fontFamily: f.body, fontSize: 12.5, lineHeight: 18, color: c.dim },
+const s = StyleSheet.create({
+  carCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.low, borderRadius: 12, padding: 14 },
+  thumb: { width: 96, height: 80, borderRadius: 8, backgroundColor: c.lowest },
+  classTag: { ...t.labelSm, color: c.secondary, textTransform: "uppercase", backgroundColor: c.highest, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: "hidden" },
+  label: { ...t.labelMd, color: c.onVariant, textTransform: "uppercase", letterSpacing: 0.9 },
+  input: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.low, borderRadius: 12, paddingHorizontal: 14, minHeight: 52, borderWidth: 1, borderColor: "transparent" },
+  dateInput: { paddingHorizontal: 12, minHeight: 46, gap: 8 },
+  inputErr: { borderColor: c.error },
+  text: { flex: 1, fontFamily: f.body, fontSize: 15, color: c.onSurface, paddingVertical: 12, ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null) },
+  err: { fontFamily: f.body, fontSize: 12.5, color: c.error },
+  choice: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.low },
+  choiceActive: { backgroundColor: c.high },
+  summary: { backgroundColor: c.lowest, borderRadius: 12, padding: 14, gap: 10 },
+  sumRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  alert: { flexDirection: "row", gap: 8, alignItems: "center", borderRadius: 12, backgroundColor: "rgba(255,180,171,0.08)", padding: 12 },
 });

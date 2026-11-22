@@ -2,9 +2,14 @@
 
 Saytdagi API'dan foydalanadigan mobil ilova: https://black-rent-car.vercel.app
 
+Dizayn: Google Stitch mobil ekranlari (bosh sahifa, avtomobillar, tafsilotlar, bron jarayoni, bron qabul qilindi, aloqa). Ranglar va shriftlar `src/lib/theme.ts` da, DESIGN.md tokenlari bilan bir xil.
+
+Dizayndagi soxta ma'lumotlar (Mercedes/Cadillac va boshqa mashinalar, narxlar, KASKO 100%, depozitsiz, VIP haydovchi, bepul yetkazish, Telegram @blackrentcars, Amir Temur 45 manzili) ilovaga qo'yilmagan: mijoz tasdiqlagach `src/lib/site.ts` va admin panel orqali qo'shiladi.
+
 ## Ekranlar
-- **Bosh sahifa**: hero, afzalliklar, avtopark (gorizontal), "Qanday ishlaydi"
-- **Avtomobillar**: katalog, kuzov turi bo'yicha filtr, narx bo'yicha saralash (narxlar kiritilgach chiqadi)
+- **Bosh sahifa**: salomlashish, promo karta, qo'ng'iroq/Instagram tugmalari, ommabop avtomobillar karuseli
+- **Avtomobillar**: katalog, toifa bo'yicha filtr (Ekonom, Komfort, Biznes, Premium, SUV)
+- **Bron (pastki menyu)**: avval mashina tanlanadi, keyin forma ochiladi
 - **Mashina sahifasi**: rasmlar galereyasi, tariflar, xususiyatlar, "Bron qilish" va qo'ng'iroq tugmalari
 - **Bron formasi**: ism, telefon (+998), olish/qaytarish sanasi va soati, ofis yoki yetkazish, izoh, taxminiy summa
 - **Bron qabul qilindi**: buyurtma raqami (BR-XXXXXX) va kvitansiya

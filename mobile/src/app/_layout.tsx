@@ -3,6 +3,8 @@ import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
 import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
 import { Montserrat_600SemiBold } from "@expo-google-fonts/montserrat/600SemiBold";
 import { Montserrat_700Bold } from "@expo-google-fonts/montserrat/700Bold";
+import { Montserrat_800ExtraBold } from "@expo-google-fonts/montserrat/800ExtraBold";
+import { Montserrat_800ExtraBold_Italic } from "@expo-google-fonts/montserrat/800ExtraBold_Italic";
 import { useFonts } from "expo-font";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -10,17 +12,17 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StoreProvider } from "../lib/store";
-import { c, f } from "../lib/theme";
+import { c } from "../lib/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const theme = {
   ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: c.ink, card: c.ink, text: c.fg, border: c.line, primary: c.gold },
+  colors: { ...DarkTheme.colors, background: c.surface, card: c.surface, text: c.onSurface, border: c.high, primary: c.primary },
 };
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({ Montserrat_700Bold, Montserrat_600SemiBold, Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
+  const [loaded, error] = useFonts({ Montserrat_800ExtraBold, Montserrat_800ExtraBold_Italic, Montserrat_700Bold, Montserrat_600SemiBold, Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
@@ -33,20 +35,11 @@ export default function RootLayout() {
       <ThemeProvider value={theme}>
         <StoreProvider>
           <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerStyle: { backgroundColor: c.ink },
-              headerTintColor: c.gold,
-              headerTitleStyle: { fontFamily: f.display, color: c.fg, fontSize: 16 },
-              headerShadowVisible: false,
-              contentStyle: { backgroundColor: c.ink },
-              headerBackButtonDisplayMode: "minimal",
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="car/[slug]" options={{ title: "" }} />
-            <Stack.Screen name="book/[slug]" options={{ title: "" }} />
-            <Stack.Screen name="done" options={{ title: "", headerBackVisible: false, gestureEnabled: false }} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surface } }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="car/[slug]" />
+            <Stack.Screen name="book/[slug]" />
+            <Stack.Screen name="done" options={{ gestureEnabled: false, animation: "fade" }} />
           </Stack>
         </StoreProvider>
       </ThemeProvider>
