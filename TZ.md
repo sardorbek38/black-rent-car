@@ -134,7 +134,7 @@ Onlayn to'lov 1-versiyada **yo'q**. Bron bu so'rov, keyin menejer qo'ng'iroq qil
 | Ma'lumotlar bazasi | **PostgreSQL** (Neon, bepul tarif) | Vercel bilan yaxshi ishlaydi |
 | ORM | **Prisma** | Sxema va migratsiyalar oson |
 | Rasmlar | **Vercel Blob** yoki Cloudinary | Admin paneldan rasm yuklash uchun |
-| Tillar | **next-intl** | uz/ru tarjimalar |
+| Tillar | O'z lug'at fayli (`src/lib/i18n.ts`), `/uz` va `/ru` manzillar | Qo'shimcha kutubxonasiz, oddiy |
 | Bildirishnoma | **Telegram Bot API** | Egasiga yangi bron haqida xabar |
 | Autentifikatsiya | Oddiy sessiya cookie + bcrypt parol | Bitta admin uchun yetarli |
 | Hosting | **Vercel**, GitHub'dan avtomatik deploy | Ustoz talabi |

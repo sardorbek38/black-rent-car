@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CarClass {
+  ECONOM
+  COMFORT
+  BUSINESS
+  PREMIUM
+}
+
+enum BodyType {
+  SEDAN
+  CROSSOVER
+  SUV
+}
+
+enum Fuel {
+  PETROL
+  HYBRID
+  ELECTRIC
+  RANGE_EXTENDER
+}
+
+enum CarStatus {
+  AVAILABLE
+  RENTED
+  SERVICE
+}
+
+enum BookingStatus {
+  NEW
+  CONFIRMED
+  ACTIVE
+  DONE
+  CANCELLED
+}
+
+enum PickupType {
+  OFFICE
+  DELIVERY
+}
+
+model Car {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  brand         String
+  model         String
+  carClass      CarClass
+  bodyType      BodyType
+  year          Int?
+  automatic     Boolean?
+  fuel          Fuel?
+  seats         Int       @default(5)
+  // narxlar so'mda; null = hali aniqlanmagan
+  pricePerDay   Int?
+  price3Days    Int?
+  price7Days    Int?
+  deposit       Int?
+  descriptionUz String    @default("")
+  descriptionRu String    @default("")
+  images        String[]
+  status        CarStatus @default(AVAILABLE)
+  isVisible     Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  bookings      Booking[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  code       String        @unique
+  car        Car           @relation(fields: [carId], references: [id])
+  carId      String
+  name       String
+  phone      String
+  startAt    DateTime
+  endAt      DateTime
+  pickupType PickupType    @default(OFFICE)
+  address    String?
+  comment    String?
+  days       Int
+  totalPrice Int?
+  status     BookingStatus @default(NEW)
+  adminNote  String?
+  locale     String        @default("uz")
+  createdAt  DateTime      @default(now())
+
+  @@index([phone, createdAt])
+  @@index([status, createdAt])
+}
