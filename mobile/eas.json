@@ -8,7 +8,8 @@
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "withoutCredentials": true
     },
     "production": {
       "android": {
