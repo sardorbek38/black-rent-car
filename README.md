@@ -28,12 +28,13 @@ npm run dev               # http://localhost:3000
 
 ## Vercel'ga joylash
 
-1. [Neon](https://neon.tech) da bepul PostgreSQL baza oching va ulanish manzilini oling.
-2. Vercel'da GitHub repodan yangi loyiha yarating.
-3. Environment Variables bo'limiga `.env.example` dagi o'zgaruvchilarni qo'shing.
-   `NEXT_PUBLIC_SITE_URL` ga sayt manzilini yozing (masalan `https://black-rent-car.vercel.app`).
-4. Birinchi marta lokal kompyuterdan Neon bazaga ulanib `npm run db:push` va `npm run db:seed` ni ishga tushiring.
-5. Deploy. Keyingi har bir `main` ga push avtomatik deploy bo'ladi.
+1. Vercel'da GitHub repodan yangi loyiha yarating (Add New → Project → `black-rent-car`).
+2. Loyihada **Storage → Create Database → Neon** ni tanlang va loyihaga ulang. `DATABASE_URL` avtomatik qo'shiladi.
+3. **Settings → Environment Variables** ga qo'shing: `ADMIN_PASSWORD`, `ADMIN_SECRET` (30+ belgili tasodifiy satr),
+   `NEXT_PUBLIC_SITE_URL` (masalan `https://black-rent-car.vercel.app`).
+4. **Deployments → Redeploy**. Build paytida `vercel-build` jadvallarni yaratadi va 8 ta mashinani qo'shadi
+   (mavjud ma'lumotlar o'zgarmaydi).
+5. Keyingi har bir `main` ga push avtomatik deploy bo'ladi.
 
 ## Telegram bildirishnoma
 
