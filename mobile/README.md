@@ -37,6 +37,11 @@ npx eas-cli@latest build -p android --profile preview      # sinov uchun .apk
 npx eas-cli@latest build -p android --profile production   # Play Console uchun .aab
 ```
 
+Komputersiz: Expo loyihasi (`@black_rentcar/black-rent-car`) GitHub'ga ulangan, base directory `mobile`.
+- Sinov APK: PR'ga `eas-build-android:preview` label qo'ying, Expo o'zi yig'adi.
+- `preview` profili `withoutCredentials` bilan, ya'ni debug kalit bilan imzolanadi (faqat sinov uchun).
+- `production` (Play Console) uchun upload keystore Expo'da saqlanishi kerak.
+
 ## Taxminlar `[?]`
 - Android paket nomi: `uz.blackrentcar.app` (Play Console'ga yuklangandan keyin o'zgartirib bo'lmaydi)
 - Ilova ikonkasi postdagi 320px logodan kattalashtirilgan: toza PNG/SVG logo kerak
