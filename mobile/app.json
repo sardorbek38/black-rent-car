@@ -2,6 +2,7 @@
   "expo": {
     "name": "Black Rent Car",
     "slug": "black-rent-car",
+    "owner": "black_rentcar",
     "scheme": "blackrentcar",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -44,6 +45,11 @@
     ],
     "experiments": {
       "typedRoutes": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bc3e0761-766a-4282-bdf4-b15439da150e"
+      }
     }
   }
 }
