@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { BookingStatus, CarClass, BodyType, Fuel, CarStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { findConflict, lockCar } from "@/lib/availability";
 import { ADMIN_COOKIE, checkPassword, cookieOptions, createToken, verifyToken } from "@/lib/auth";
 
 async function requireAdmin() {
@@ -32,9 +33,28 @@ export async function updateBooking(fd: FormData) {
   await requireAdmin();
   const id = String(fd.get("id"));
   const status = STATUSES.find((s) => s === fd.get("status"));
-  const adminNote = String(fd.get("adminNote") ?? "").trim().slice(0, 500) || null;
-  await prisma.booking.update({ where: { id }, data: { ...(status && { status }), adminNote } });
+  const note = fd.get("adminNote");
+  const adminNote = note === null ? undefined : String(note).trim().slice(0, 500) || null;
+  const back = String(fd.get("back") ?? "");
+  const backUrl = back.startsWith("/admin") ? back : "/admin";
+
+  // Tasdiqlash/ijaraga berishda shu mashinaning boshqa tasdiqlangan broniga to'qnashmasligini tekshiramiz
+  const clash = await prisma.$transaction(async (tx) => {
+    const b = await tx.booking.findUnique({ where: { id }, select: { carId: true, startAt: true, endAt: true } });
+    if (!b) return null;
+    if (status === "CONFIRMED" || status === "ACTIVE") {
+      await lockCar(tx, b.carId);
+      const other = await findConflict(tx, b.carId, b.startAt, b.endAt, { excludeId: id, statuses: ["CONFIRMED", "ACTIVE"] });
+      if (other) return other.code;
+    }
+    await tx.booking.update({ where: { id }, data: { ...(status && { status }), ...(adminNote !== undefined && { adminNote }) } });
+    return null;
+  });
   revalidatePath("/admin");
+  const url = new URL(backUrl, "http://x");
+  url.searchParams.delete("clash");
+  if (clash) url.searchParams.set("clash", clash);
+  redirect(url.pathname + url.search);
 }
 
 function int(v: FormDataEntryValue | null) {

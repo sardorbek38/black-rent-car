@@ -1,13 +1,14 @@
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { priceText } from "../../components/CarCards";
 import { DateSheet } from "../../components/DateSheet";
 import { BackHeader } from "../../components/Header";
 import { GoldButton, Icon, type IconName } from "../../components/ui";
-import { createBooking, fetchCar, type BookingError } from "../../lib/api";
+import { createBooking, fetchBusy, fetchCar, type BookingError } from "../../lib/api";
+import { rangeBlocked, startBlocked, type BusyRange } from "../../lib/busy";
 import { formatPhoneLocal, formatSum, rentalDays, totalPrice } from "../../lib/format";
 import { carImage } from "../../lib/images";
 import { useStore } from "../../lib/store";
@@ -51,6 +52,9 @@ export default function Book() {
   const [error, setError] = useState<BookingError | null>(null);
   const [sending, setSending] = useState(false);
   const today = useMemo(() => new Date(), []);
+  const [busy, setBusy] = useState<BusyRange[]>([]);
+  const loadBusy = useCallback(() => { if (slug) fetchBusy(slug).then(setBusy); }, [slug]);
+  useEffect(loadBusy, [loadBusy]);
 
   if (!car) return <View style={{ flex: 1, backgroundColor: c.surface }}><BackHeader title={d.form.title} /></View>;
 
@@ -59,9 +63,15 @@ export default function Book() {
   const tbd = d.common.tbd;
   const errText = (k: BookingError) => (error === k ? d.form.errors[k] : null);
 
+  const conflict = end > start && rangeBlocked(busy, start, end);
   const changeStart = (v: Date) => {
     setStart(v);
     if (end <= v) setEnd(new Date(v.getTime() + 86_400_000));
+    if (error === "busy") setError(null);
+  };
+  const changeEnd = (v: Date) => {
+    setEnd(v);
+    if (error === "busy") setError(null);
   };
 
   const submit = async () => {
@@ -71,6 +81,7 @@ export default function Book() {
     if (digits.length !== 9) return setError("phone");
     if (end <= start) return setError("dates");
     if (start.getTime() < Date.now() - 3_600_000) return setError("past");
+    if (conflict) return setError("busy");
     if (pickup === "DELIVERY" && !address.trim()) return setError("address");
     setError(null);
     setSending(true);
@@ -81,7 +92,10 @@ export default function Book() {
         carId, name: name.trim(), phone: `+998${digits}`, startAt: start.toISOString(), endAt: end.toISOString(),
         pickupType: pickup, address: pickup === "DELIVERY" ? address.trim() : undefined, comment: comment.trim() || undefined, locale,
       });
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) {
+        if (res.error === "busy") loadBusy();
+        return setError(res.error);
+      }
       router.replace({
         pathname: "/done",
         params: {
@@ -146,7 +160,7 @@ export default function Book() {
             {([["start", d.form.start, "calendar-month", start], ["end", d.form.end, "event-available", end]] as const).map(([k, label, icon, v]) => (
               <View key={k} style={{ flex: 1 }}>
                 <Field label={label}>
-                  <Pressable onPress={() => setSheet(k)} style={[s.input, s.dateInput, ((k === "end" && error === "dates") || (k === "start" && error === "past")) && s.inputErr]}>
+                  <Pressable onPress={() => setSheet(k)} style={[s.input, s.dateInput, ((k === "end" && (error === "dates" || conflict)) || (k === "start" && error === "past")) && s.inputErr]}>
                     <Icon name={icon} size={18} color={c.outline} />
                     <Text style={[t.bodySm, { color: c.onSurface, flex: 1 }]} numberOfLines={1}>{fmt(v)}</Text>
                   </Pressable>
@@ -154,7 +168,9 @@ export default function Book() {
               </View>
             ))}
           </View>
-          {errText("dates") || errText("past") ? <Text style={[s.err, { marginTop: -10 }]}>{errText("dates") ?? errText("past")}</Text> : null}
+          {errText("dates") || errText("past") || conflict || error === "busy" ? (
+            <Text style={[s.err, { marginTop: -10 }]}>{errText("dates") ?? errText("past") ?? d.form.errors.busy}</Text>
+          ) : null}
 
           <Field label={d.form.pickup}>
             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -241,7 +257,9 @@ export default function Book() {
         visible={sheet !== null}
         title={sheet === "end" ? d.form.end : d.form.start}
         value={sheet === "end" ? end : start}
-        onChange={sheet === "end" ? setEnd : changeStart}
+        onChange={sheet === "end" ? changeEnd : changeStart}
+        blocked={sheet === "end" ? (v) => v > start && rangeBlocked(busy, start, v) : (v) => startBlocked(busy, v)}
+        hasBusy={busy.length > 0}
         onClose={() => setSheet(null)}
         minDay={sheet === "end" ? start : today}
         locale={locale}
