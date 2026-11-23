@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { getDict, type Locale } from "@/lib/i18n";
 import { site, telegramHref } from "@/lib/site";
 import { Icon } from "@/components/Icon";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;
-  return { title: getDict(locale).contacts.title };
+  return pageMeta(locale, "/contacts", { title: getDict(locale).contacts.title });
 }
 
 export default async function ContactsPage({ params }: { params: Promise<{ locale: Locale }> }) {

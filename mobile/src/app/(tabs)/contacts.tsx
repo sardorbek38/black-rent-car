@@ -43,7 +43,7 @@ function SmallBtn({ label, icon, onPress, gold }: { label?: string; icon: IconNa
 }
 
 export default function Contacts() {
-  const { t: d } = useStore();
+  const { t: d, locale } = useStore();
   const call = () => Linking.openURL(site.phoneHref);
   return (
     <View style={{ flex: 1, backgroundColor: c.surface }}>
@@ -118,6 +118,10 @@ export default function Contacts() {
             </Pressable>
           </View>
         </LinearGradient>
+
+        <Pressable accessibilityRole="link" onPress={() => Linking.openURL(`${site.website}/${locale}/privacy`)} style={{ alignSelf: "center", padding: 8 }}>
+          <Text style={[t.bodySm, { textDecorationLine: "underline" }]}>{d.contacts.privacy}</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
