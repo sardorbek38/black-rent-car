@@ -55,7 +55,7 @@ const uz = {
   pick: { title: "Bron qilish", sub: "Avval mashinani tanlang" },
   form: {
     title: "Bron jarayoni", name: "Ism va familiya", namePh: "Ism va familiyangizni kiriting",
-    phone: "Telefon raqam", start: "Olish sanasi", end: "Qaytarish sanasi", pickTitle: "Sana va vaqtni tanlang", done: "Tayyor",
+    phone: "Telefon raqam", start: "Olish sanasi", end: "Qaytarish sanasi", pickTitle: "Sana va vaqtni tanlang", done: "Tayyor", busyDay: "Band", partDay: "Qisman", busyNote: "Kulrang kunlar va soatlar band",
     pickup: "Olish joyi", office: "Ofisdan olaman", delivery: "Manzilga yetkazish",
     address: "Yetkazish manzili", addressPh: "Yetkazib berish manzilini kiriting",
     comment: "Izoh yoki maxsus talablar", commentPh: "Masalan: bolalar o'rindig'i kerak, reys raqami HY-271...", optional: "Ixtiyoriy",
@@ -72,6 +72,7 @@ const uz = {
       rate: "Juda ko'p so'rov. Bir daqiqadan keyin qayta urinib ko'ring",
       server: "Xatolik yuz berdi. Iltimos, qo'ng'iroq qiling",
       network: "Internet bilan aloqa yo'q. Tekshirib, qayta urinib ko'ring",
+      busy: "Bu vaqtda mashina band. Bo'sh kunlarni tanlang",
     },
   },
   done: {
@@ -95,7 +96,7 @@ const uz = {
     ],
     officeTitle: "Ofis manzili", officeSoon: "Manzil tez orada qo'shiladi. Hozircha mashinani o'zingiz aytgan manzilga yetkazib beramiz.",
     supportTitle: "Yo'lda savol tug'ildimi?", supportText: "Ijara davomida istalgan savol bo'yicha menejerga 24/7 qo'ng'iroq qiling.",
-    supportBtn: "Menejer bilan bog'lanish",
+    supportBtn: "Menejer bilan bog'lanish", privacy: "Maxfiylik siyosati",
   },
 };
 
@@ -154,7 +155,7 @@ const ru: Dict = {
   pick: { title: "Бронирование", sub: "Сначала выберите автомобиль" },
   form: {
     title: "Бронирование", name: "Имя и фамилия", namePh: "Введите имя и фамилию",
-    phone: "Номер телефона", start: "Дата получения", end: "Дата возврата", pickTitle: "Выберите дату и время", done: "Готово",
+    phone: "Номер телефона", start: "Дата получения", end: "Дата возврата", pickTitle: "Выберите дату и время", done: "Готово", busyDay: "Занято", partDay: "Частично", busyNote: "Серые дни и часы заняты",
     pickup: "Место получения", office: "Заберу из офиса", delivery: "Доставка по адресу",
     address: "Адрес доставки", addressPh: "Введите адрес доставки",
     comment: "Комментарий или пожелания", commentPh: "Например: нужно детское кресло, номер рейса HY-271...", optional: "Необязательно",
@@ -171,6 +172,7 @@ const ru: Dict = {
       rate: "Слишком много заявок. Попробуйте через минуту",
       server: "Произошла ошибка. Пожалуйста, позвоните нам",
       network: "Нет связи с интернетом. Проверьте и попробуйте снова",
+      busy: "В это время машина занята. Выберите свободные дни",
     },
   },
   done: {
@@ -194,7 +196,7 @@ const ru: Dict = {
     ],
     officeTitle: "Адрес офиса", officeSoon: "Адрес скоро появится. Пока мы доставим автомобиль по вашему адресу.",
     supportTitle: "Вопрос в дороге?", supportText: "Во время аренды звоните менеджеру 24/7 по любому вопросу.",
-    supportBtn: "Связаться с менеджером",
+    supportBtn: "Связаться с менеджером", privacy: "Политика конфиденциальности",
   },
 };
 

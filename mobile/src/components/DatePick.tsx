@@ -21,16 +21,30 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const sameDay = (a: Date, b: Date) => startOfDay(a).getTime() === startOfDay(b).getTime();
 
-export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; onChange: (d: Date) => void; minDay: Date; locale: Locale; t: Dict }) {
+/** blocked: shu vaqtni tanlab bo'lmaydi (mashina band). Hamma soati band kun o'chiriladi. */
+export function DatePick({ value, onChange, minDay, locale, t, blocked }: {
+  value: Date; onChange: (d: Date) => void; minDay: Date; locale: Locale; t: Dict; blocked?: (d: Date) => boolean;
+}) {
   const days = useMemo(() => {
     const base = startOfDay(minDay);
     return Array.from({ length: 31 }, (_, i) => new Date(base.getFullYear(), base.getMonth(), base.getDate() + i));
   }, [minDay]);
   const today = startOfDay(new Date());
+  const now = new Date();
+  const hourOff = (day: Date, h: number) =>
+    (sameDay(day, now) && h <= now.getHours()) || !!blocked?.(new Date(day.getFullYear(), day.getMonth(), day.getDate(), h));
+  const dayState = (day: Date) => {
+    if (!blocked) return "free";
+    let off = 0, open = 0;
+    for (const h of HOURS) {
+      if (sameDay(day, now) && h <= now.getHours()) continue;
+      if (blocked(new Date(day.getFullYear(), day.getMonth(), day.getDate(), h))) off++; else open++;
+    }
+    return open === 0 ? "busy" : off > 0 ? "partial" : "free";
+  };
 
   const pickDay = (d: Date) => onChange(new Date(d.getFullYear(), d.getMonth(), d.getDate(), value.getHours(), 0));
   const pickHour = (h: number) => onChange(new Date(value.getFullYear(), value.getMonth(), value.getDate(), h, 0));
-  const now = new Date();
 
   // Tanlangan kun va soatni ko'rinadigan joyga aylantiramiz
   const dayRef = useRef<ScrollViewInstance>(null);
@@ -51,12 +65,15 @@ export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; 
         {days.map((d) => {
           const active = sameDay(d, value);
           const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-          const top = diff === 0 ? t.form.today : diff === 1 ? t.form.tomorrow : WEEK[locale][d.getDay()];
+          const state = dayState(d);
+          const full = state === "busy" && !active;
+          const top = full ? t.form.busyDay : diff === 0 ? t.form.today : diff === 1 ? t.form.tomorrow : WEEK[locale][d.getDay()];
           return (
-            <Pressable key={d.toISOString()} onPress={() => pickDay(d)} style={[st.day, active && st.active]}>
-              <Text style={[st.dayTop, active && { color: c.onPrimary }]} numberOfLines={1}>{top}</Text>
+            <Pressable key={d.toISOString()} disabled={full} onPress={() => pickDay(d)} style={[st.day, active && st.active, full && st.dayBusy]}>
+              <Text style={[st.dayTop, active && { color: c.onPrimary }, full && { color: c.error }]} numberOfLines={1}>{top}</Text>
               <Text style={[st.dayNum, active && { color: c.onPrimary }]}>{d.getDate()}</Text>
               <Text style={[st.dayTop, active && { color: c.onPrimary }]}>{MONTH[locale][d.getMonth()]}</Text>
+              {state === "partial" && <View style={[st.dot, active && { backgroundColor: c.onPrimary }]} />}
             </Pressable>
           );
         })}
@@ -64,10 +81,10 @@ export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; 
       <ScrollView ref={hourRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
         {HOURS.map((h) => {
           const active = value.getHours() === h;
-          const past = sameDay(value, now) && h <= now.getHours();
+          const off = hourOff(value, h);
           return (
-            <Pressable key={h} disabled={past} onPress={() => pickHour(h)} style={[st.hour, active && st.active, past && { opacity: 0.3 }]}>
-              <Text style={[st.hourText, active && { color: c.onPrimary }]}>{String(h).padStart(2, "0")}:00</Text>
+            <Pressable key={h} disabled={off} onPress={() => pickHour(h)} style={[st.hour, active && st.active, off && { opacity: 0.3 }]}>
+              <Text style={[st.hourText, active && { color: c.onPrimary }, off && !active && { textDecorationLine: "line-through" }]}>{String(h).padStart(2, "0")}:00</Text>
             </Pressable>
           );
         })}
@@ -78,6 +95,8 @@ export function DatePick({ value, onChange, minDay, locale, t }: { value: Date; 
 
 const st = StyleSheet.create({
   day: { width: DAY_W, alignItems: "center", paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: c.high, backgroundColor: c.low, gap: 1 },
+  dayBusy: { opacity: 0.45, borderColor: c.error },
+  dot: { position: "absolute", bottom: 4, width: 4, height: 4, borderRadius: 2, backgroundColor: c.error },
   active: { backgroundColor: c.primary, borderColor: c.primary },
   dayTop: { fontFamily: f.body, fontSize: 11, color: c.outline },
   dayNum: { fontFamily: f.display, fontSize: 18, color: c.onSurface },

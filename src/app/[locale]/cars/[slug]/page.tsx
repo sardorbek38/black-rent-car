@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getDict, type Locale } from "@/lib/i18n";
@@ -24,11 +25,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { slug, locale } = await params;
   const car = await prisma.car.findUnique({ where: { slug } });
   if (!car) return {};
-  return {
+  const description = (locale === "ru" ? car.descriptionRu : car.descriptionUz) || undefined;
+  return pageMeta(locale, `/cars/${slug}`, {
     title: `${car.brand} ${car.model}`,
-    description: locale === "ru" ? car.descriptionRu : car.descriptionUz,
-    openGraph: { images: [car.images[0]] },
-  };
+    description,
+    openGraph: { title: `${car.brand} ${car.model} | Black Rent Car`, description, images: car.images[0] ? [car.images[0]] : undefined },
+  });
 }
 
 export default async function CarPage({ params }: { params: Params }) {
@@ -137,7 +139,7 @@ export default async function CarPage({ params }: { params: Params }) {
 
             <div className="my-5 border-t border-line" />
             <Suspense fallback={<div className="h-[560px] animate-pulse rounded-xl bg-raised/50" />}>
-              <BookingForm car={{ id: car.id, pricePerDay: car.pricePerDay, price3Days: car.price3Days, price7Days: car.price7Days }} locale={locale} t={t} />
+              <BookingForm car={{ id: car.id, slug: car.slug, pricePerDay: car.pricePerDay, price3Days: car.price3Days, price7Days: car.price7Days }} locale={locale} t={t} />
             </Suspense>
           </div>
           <a href={site.phoneHref} className="btn-ghost mt-3 w-full !normal-case !tracking-normal"><Icon name="call" className="!text-[18px] text-gold" />{t.common.call}: {site.phone}</a>

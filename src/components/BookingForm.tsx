@@ -1,11 +1,13 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Dict, Locale } from "@/lib/i18n";
 import { dailyRate, formatSum, rentalDays } from "@/lib/format";
+import { parseBusy, rangeBlocked, type BusyJson, type BusyRange } from "@/lib/busy";
+import { AvailabilityCalendar } from "./AvailabilityCalendar";
 import { Icon } from "./Icon";
 
-type CarPrices = { id: string; pricePerDay: number | null; price3Days: number | null; price7Days: number | null };
+type CarPrices = { id: string; slug: string; pricePerDay: number | null; price3Days: number | null; price7Days: number | null };
 
 function toLocalInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -17,6 +19,15 @@ function initial(dateStr: string | undefined, fallbackDays: number) {
   if (!dateStr) d.setHours(10, 0, 0, 0);
   return toLocalInput(d);
 }
+
+function withDate(value: string, day: Date) {
+  const t = new Date(value);
+  const h = isNaN(+t) ? 10 : t.getHours(), m = isNaN(+t) ? 0 : t.getMinutes();
+  return toLocalInput(new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m));
+}
+
+const shortFmt = (d: Date) =>
+  new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(d);
 
 function formatPhoneInput(v: string) {
   const d = v.replace(/\D/g, "").replace(/^998/, "").slice(0, 9);
@@ -36,12 +47,41 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
+  const [busy, setBusy] = useState<BusyRange[] | null>(null);
+  const [pickNext, setPickNext] = useState<"start" | "end">("start");
+
+  // Band vaqtlar har safar yangidan olinadi (sahifa keshlanadi, bandlik keshlanmasin)
+  const loadBusy = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/cars/${encodeURIComponent(car.slug)}/busy`, { cache: "no-store" });
+      const data = (await res.json()) as { busy?: BusyJson[] };
+      setBusy(parseBusy(data.busy ?? []));
+    } catch {
+      setBusy([]); // yuklanmasa ham bron qilish mumkin, server baribir tekshiradi
+    }
+  }, [car.slug]);
+  useEffect(() => { loadBusy(); }, [loadBusy]);
 
   const days = useMemo(() => {
     const s = new Date(form.startAt), e = new Date(form.endAt);
     return isNaN(+s) || isNaN(+e) || e <= s ? null : rentalDays(s, e);
   }, [form.startAt, form.endAt]);
   const rate = days ? dailyRate(car, days) : null;
+  const conflict = !!(busy && days && rangeBlocked(busy, new Date(form.startAt), new Date(form.endAt)));
+
+  function pickDay(day: Date) {
+    const startDay = new Date(form.startAt);
+    const sameAsStart = startDay.toDateString() === day.toDateString();
+    if (pickNext === "start" || isNaN(+startDay) || day < startDay) {
+      const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+      setForm((p) => ({ ...p, startAt: withDate(p.startAt, day), endAt: withDate(p.endAt, next) }));
+      setPickNext("end");
+    } else if (!sameAsStart) {
+      setForm((p) => ({ ...p, endAt: withDate(p.endAt, day) }));
+      setPickNext("start");
+    }
+    setErrors((e) => ({ ...e, startAt: "", endAt: "", form: "" }));
+  }
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((p) => ({ ...p, [k]: k === "phone" ? formatPhoneInput(e.target.value) : e.target.value }));
@@ -52,6 +92,7 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
     if (form.phone.replace(/\D/g, "").length !== 9) er.phone = f.errors.phone;
     if (!days) er.endAt = f.errors.dates;
     if (new Date(form.startAt).getTime() < Date.now() - 60 * 60 * 1000) er.startAt = f.errors.past;
+    if (days && conflict) er.endAt = f.errors.busy;
     if (form.pickupType === "DELIVERY" && form.address.trim().length < 3) er.address = f.errors.address;
     return er;
   }
@@ -76,6 +117,12 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        setErrors({ endAt: f.errors.busy });
+        setSending(false);
+        loadBusy();
+        return;
+      }
       if (!res.ok) {
         setErrors({ form: res.status === 429 ? f.errors.rate : (data.field && f.errors[data.field as keyof typeof f.errors]) || f.errors.server });
         setSending(false);
@@ -108,6 +155,25 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
         </div>
         {err("phone")}
       </label>
+      <AvailabilityCalendar
+        busy={busy}
+        start={isNaN(+new Date(form.startAt)) ? null : new Date(form.startAt)}
+        end={isNaN(+new Date(form.endAt)) ? null : new Date(form.endAt)}
+        pickNext={pickNext}
+        onPick={pickDay}
+        locale={locale}
+        t={t}
+      />
+      {busy && busy.length > 0 && (
+        <div className="text-xs text-muted">
+          <p className="label !mb-1">{f.cal.busyList}</p>
+          <ul className="space-y-0.5">
+            {busy.slice(0, 5).map((b) => (
+              <li key={+b.start} className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-danger" />{shortFmt(b.start)} → {shortFmt(b.end)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
         <label className="block">
           <span className="label">{f.start}</span>
@@ -117,7 +183,7 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
         <label className="block">
           <span className="label">{f.end}</span>
           <input type="datetime-local" className="field" value={form.endAt} onChange={set("endAt")} />
-          {err("endAt")}
+          {errors.endAt ? err("endAt") : conflict && <p className="mt-1.5 text-xs text-danger">{f.errors.busy}</p>}
         </label>
       </div>
       <fieldset>

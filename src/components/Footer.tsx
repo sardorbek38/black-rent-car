@@ -36,7 +36,10 @@ export function Footer({ locale, t }: { locale: Locale; t: Dict }) {
         </div>
       </div>
       <div className="container-x mt-12 border-t border-line pt-6 text-xs text-dim">
-        © {new Date().getFullYear()} Black Rent Car. {t.footer.rights}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span>© {new Date().getFullYear()} Black Rent Car. {t.footer.rights}</span>
+          <Link className="hover:text-gold" href={`${p}/privacy`}>{t.footer.privacy}</Link>
+        </div>
       </div>
     </footer>
   );

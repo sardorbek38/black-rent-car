@@ -95,3 +95,10 @@ model Booking {
   @@index([phone, createdAt])
   @@index([status, createdAt])
 }
+
+// Sozlamalar (masalan admin parolining hash'i)
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

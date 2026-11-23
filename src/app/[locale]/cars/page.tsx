@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/db";
 import { getDict, type Locale } from "@/lib/i18n";
 import { CarCard } from "@/components/CarCard";
@@ -9,7 +10,7 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;
-  return { title: getDict(locale).nav.cars };
+  return pageMeta(locale, "/cars", { title: getDict(locale).nav.cars });
 }
 
 export default async function CarsPage({ params }: { params: Promise<{ locale: Locale }> }) {

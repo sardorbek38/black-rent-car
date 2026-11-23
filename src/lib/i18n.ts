@@ -101,6 +101,7 @@ const uz = {
   },
   form: {
     title: "Bron qilish",
+    cal: { hint: "Olish va qaytarish kunini tanlang", free: "Bo'sh", partial: "Qisman band", busy: "Band", busyList: "Band vaqtlar", start: "Olish", end: "Qaytarish", loading: "Bandlik yuklanmoqda…" },
     name: "Ism va familiya",
     namePh: "Ismingiz",
     phone: "Telefon raqam",
@@ -129,6 +130,7 @@ const uz = {
       address: "Yetkazish manzilini kiriting",
       rate: "Juda ko'p so'rov. Bir daqiqadan keyin qayta urinib ko'ring",
       server: "Xatolik yuz berdi. Iltimos, qo'ng'iroq qiling",
+      busy: "Bu vaqtda mashina band. Kalendardan bo'sh kunlarni tanlang",
     },
   },
   done: {
@@ -178,6 +180,7 @@ const uz = {
     links: "Tezkor havolalar",
     contact: "Aloqa",
     rights: "Barcha huquqlar himoyalangan.",
+    privacy: "Maxfiylik siyosati",
   },
 };
 
@@ -278,6 +281,7 @@ const ru: Dict = {
   },
   form: {
     title: "Бронирование",
+    cal: { hint: "Выберите дни получения и возврата", free: "Свободно", partial: "Частично занято", busy: "Занято", busyList: "Занятое время", start: "Получение", end: "Возврат", loading: "Загружаем занятость…" },
     name: "Имя и фамилия",
     namePh: "Ваше имя",
     phone: "Номер телефона",
@@ -306,6 +310,7 @@ const ru: Dict = {
       address: "Введите адрес доставки",
       rate: "Слишком много заявок. Попробуйте через минуту",
       server: "Произошла ошибка. Пожалуйста, позвоните нам",
+      busy: "В это время машина занята. Выберите свободные дни в календаре",
     },
   },
   done: {
@@ -355,6 +360,7 @@ const ru: Dict = {
     links: "Быстрые ссылки",
     contact: "Контакты",
     rights: "Все права защищены.",
+    privacy: "Политика конфиденциальности",
   },
 };
 

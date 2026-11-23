@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { getDict, type Locale } from "@/lib/i18n";
 import { Icon } from "@/components/Icon";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;
-  return { title: getDict(locale).terms.title };
+  return pageMeta(locale, "/terms", { title: getDict(locale).terms.title });
 }
 
 export default async function TermsPage({ params }: { params: Promise<{ locale: Locale }> }) {
