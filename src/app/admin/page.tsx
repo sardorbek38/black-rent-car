@@ -13,9 +13,17 @@ const COLOR: Record<BookingStatus, string> = {
   NEW: "bg-gold text-ink", CONFIRMED: "bg-sky-500/20 text-sky-300", ACTIVE: "bg-emerald-500/20 text-emerald-300",
   DONE: "bg-raised text-muted", CANCELLED: "bg-danger/15 text-danger",
 };
+// Bir bosishda holatni o'zgartirish tugmalari
+const QUICK: Record<BookingStatus, { to: BookingStatus; label: string; icon: string; danger?: boolean }[]> = {
+  NEW: [{ to: "CONFIRMED", label: "Tasdiqlash", icon: "check_circle" }, { to: "CANCELLED", label: "Bekor qilish", icon: "cancel", danger: true }],
+  CONFIRMED: [{ to: "ACTIVE", label: "Mashina berildi", icon: "key" }, { to: "CANCELLED", label: "Bekor qilish", icon: "cancel", danger: true }],
+  ACTIVE: [{ to: "DONE", label: "Qaytarildi", icon: "task_alt" }],
+  DONE: [],
+  CANCELLED: [],
+};
 const fmt = (d: Date) => new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tashkent" }).format(d);
 
-export default async function AdminBookings({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+export default async function AdminBookings({ searchParams }: { searchParams: Promise<{ status?: string; clash?: string }> }) {
   const sp = await searchParams;
   const status = (Object.keys(LABEL) as BookingStatus[]).find((s) => s === sp.status);
   const startOfDay = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tashkent" }) + "T00:00:00+05:00");
@@ -28,6 +36,8 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
     prisma.booking.count({ where: { createdAt: { gte: monthAgo } } }),
     prisma.booking.count({ where: { status: "ACTIVE" } }),
   ]);
+  const back = status ? `/admin?status=${status}` : "/admin";
+  const clashCode = sp.clash && /^BR-\d{6}$/.test(sp.clash) ? sp.clash : null;
   const countOf = (s: BookingStatus) => counts.find((c) => c.status === s)?._count ?? 0;
 
   // Bir mashinaga tasdiqlangan bronlar ustma-ust tushsa ogohlantirish
@@ -46,6 +56,13 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
   return (
     <AdminShell active="bookings">
       <h1 className="font-display text-2xl font-bold">Bronlar</h1>
+      <p className="mt-1 text-xs text-muted">Yangi, tasdiqlangan va ijaradagi bronlar mashina sanasini band qiladi: saytda va ilovada shu kunlar band ko'rinadi. Bekor qilsangiz, sana bo'shaydi.</p>
+      {clashCode && (
+        <p className="mt-4 flex items-center gap-2 rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
+          <Icon name="error" className="!text-[18px]" />
+          Saqlanmadi: bu mashina shu sanalarga #{clashCode} bron bilan allaqachon tasdiqlangan. Avval o&apos;sha bronni bekor qiling yoki sanani o&apos;zgartiring.
+        </p>
+      )}
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="card p-4">
@@ -87,8 +104,23 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
               <div><p className="text-[10px] font-bold uppercase tracking-wider text-dim">Joy</p><p>{b.pickupType === "DELIVERY" ? `Yetkazish: ${b.address}` : "Ofisdan"}</p></div>
             </div>
             {b.comment && <p className="mt-3 rounded-lg bg-raised p-3 text-sm text-muted">💬 {b.comment}</p>}
-            <form action={updateBooking} className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+            {QUICK[b.status].length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
+                {QUICK[b.status].map((q) => (
+                  <form key={q.to} action={updateBooking}>
+                    <input type="hidden" name="id" value={b.id} />
+                    <input type="hidden" name="status" value={q.to} />
+                    <input type="hidden" name="back" value={back} />
+                    <button className={q.danger ? "btn-ghost !border-danger/40 !px-4 !py-2 !text-xs !text-danger" : "btn-gold !px-4 !py-2 !text-xs"}>
+                      <Icon name={q.icon} className="!text-[16px]" />{q.label}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            )}
+            <form action={updateBooking} className="mt-3 flex flex-wrap items-center gap-2">
               <input type="hidden" name="id" value={b.id} />
+              <input type="hidden" name="back" value={back} />
               <select name="status" defaultValue={b.status} className="field !w-auto !py-2 text-sm">
                 {(Object.keys(LABEL) as BookingStatus[]).map((s) => <option key={s} value={s}>{LABEL[s]}</option>)}
               </select>

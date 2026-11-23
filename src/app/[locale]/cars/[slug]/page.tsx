@@ -137,7 +137,7 @@ export default async function CarPage({ params }: { params: Params }) {
 
             <div className="my-5 border-t border-line" />
             <Suspense fallback={<div className="h-[560px] animate-pulse rounded-xl bg-raised/50" />}>
-              <BookingForm car={{ id: car.id, pricePerDay: car.pricePerDay, price3Days: car.price3Days, price7Days: car.price7Days }} locale={locale} t={t} />
+              <BookingForm car={{ id: car.id, slug: car.slug, pricePerDay: car.pricePerDay, price3Days: car.price3Days, price7Days: car.price7Days }} locale={locale} t={t} />
             </Suspense>
           </div>
           <a href={site.phoneHref} className="btn-ghost mt-3 w-full !normal-case !tracking-normal"><Icon name="call" className="!text-[18px] text-gold" />{t.common.call}: {site.phone}</a>

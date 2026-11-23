@@ -3,6 +3,7 @@ import { randomInt } from "crypto";
 import { prisma } from "@/lib/db";
 import { formatSum, normalizePhone, prettyPhone, rentalDays, totalPrice } from "@/lib/format";
 import { escapeHtml, notifyTelegram } from "@/lib/telegram";
+import { findConflict, lockCar } from "@/lib/availability";
 
 export const runtime = "nodejs";
 
@@ -46,17 +47,21 @@ export async function POST(req: Request) {
   const days = rentalDays(startAt, endAt);
   const total = totalPrice(car, days);
 
-  let booking;
-  for (let attempt = 0; attempt < 5 && !booking; attempt++) {
-    const code = `BR-${randomInt(100000, 999999)}`;
-    try {
-      booking = await prisma.booking.create({
+  // Bir mashinani bir vaqtga ikki marta bron qilib bo'lmaydi. Qulf parallel so'rovlarni navbatga qo'yadi.
+  const result = await prisma.$transaction(async (tx) => {
+    await lockCar(tx, car.id);
+    if (await findConflict(tx, car.id, startAt, endAt)) return "busy" as const;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = `BR-${randomInt(100000, 999999)}`;
+      if (await tx.booking.findUnique({ where: { code }, select: { id: true } })) continue; // kod takrorlansa qayta urinamiz
+      return tx.booking.create({
         data: { code, carId: car.id, name, phone, startAt, endAt, pickupType, address, comment, days, totalPrice: total, locale },
       });
-    } catch (e: unknown) {
-      if ((e as { code?: string }).code !== "P2002") throw e; // kod takrorlansa qayta urinamiz
     }
-  }
+    return null;
+  });
+  if (result === "busy") return bad("busy", 409);
+  const booking = result;
   if (!booking) return bad("server", 500);
 
   const fmt = (d: Date) => new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tashkent" }).format(d);

@@ -6,7 +6,8 @@ import { DatePick } from "./DatePick";
 import { GoldButton } from "./ui";
 
 /** Pastdan chiqadigan sana/vaqt tanlash oynasi */
-export function DateSheet({ visible, title, value, onChange, onClose, minDay, locale, d }: {
+export function DateSheet({ visible, title, value, onChange, onClose, minDay, locale, d, blocked, hasBusy }: {
+  blocked?: (v: Date) => boolean; hasBusy?: boolean;
   visible: boolean; title: string; value: Date; onChange: (v: Date) => void; onClose: () => void; minDay: Date; locale: Locale; d: Dict;
 }) {
   const insets = useSafeAreaInsets();
@@ -17,7 +18,8 @@ export function DateSheet({ visible, title, value, onChange, onClose, minDay, lo
         <View style={s.handle} />
         <Text style={[t.labelMd, { color: c.onVariant, textTransform: "uppercase", letterSpacing: 1 }]}>{title}</Text>
         <Text style={[t.headlineSm, { marginBottom: 6 }]}>{d.form.pickTitle}</Text>
-        <DatePick value={value} onChange={onChange} minDay={minDay} locale={locale} t={d} />
+        <DatePick value={value} onChange={onChange} minDay={minDay} locale={locale} t={d} blocked={blocked} />
+        {hasBusy ? <Text style={[t.bodySm, { color: c.outline }]}>{d.form.busyNote}</Text> : null}
         <GoldButton label={d.form.done} icon="check" onPress={onClose} style={{ marginTop: 8 }} />
       </View>
     </Modal>

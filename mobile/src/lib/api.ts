@@ -1,4 +1,5 @@
 import { API_BASE } from "./site";
+import { parseBusy, type BusyJson, type BusyRange } from "./busy";
 import type { Car } from "./types";
 
 async function getJson<T>(path: string, init?: RequestInit, timeoutMs = 10_000): Promise<{ status: number; data: T }> {
@@ -24,6 +25,16 @@ export async function fetchCar(slug: string): Promise<Car | null> {
   return status === 200 && data.car ? data.car : null;
 }
 
+/** Mashinaning band vaqtlari. Yuklanmasa bo'sh ro'yxat: server baribir tekshiradi. */
+export async function fetchBusy(slug: string): Promise<BusyRange[]> {
+  try {
+    const { status, data } = await getJson<{ busy?: BusyJson[] }>(`/api/cars/${encodeURIComponent(slug)}/busy`, { cache: "no-store" } as RequestInit);
+    return status === 200 && Array.isArray(data.busy) ? parseBusy(data.busy) : [];
+  } catch {
+    return [];
+  }
+}
+
 export type BookingInput = {
   carId: string;
   name: string;
@@ -36,7 +47,7 @@ export type BookingInput = {
   locale: "uz" | "ru";
 };
 
-export type BookingError = "name" | "phone" | "dates" | "past" | "address" | "rate" | "server" | "network";
+export type BookingError = "name" | "phone" | "dates" | "past" | "address" | "rate" | "server" | "network" | "busy";
 
 export async function createBooking(input: BookingInput): Promise<{ ok: true; code: string } | { ok: false; error: BookingError }> {
   try {
@@ -46,6 +57,7 @@ export async function createBooking(input: BookingInput): Promise<{ ok: true; co
     });
     if (status === 201 && data.code) return { ok: true, code: data.code };
     if (status === 429) return { ok: false, error: "rate" };
+    if (status === 409) return { ok: false, error: "busy" };
     const field = data.field as BookingError | undefined;
     return { ok: false, error: field && ["name", "phone", "dates", "past", "address"].includes(field) ? field : "server" };
   } catch {
