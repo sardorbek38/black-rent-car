@@ -96,7 +96,7 @@ const uz = {
     ],
     officeTitle: "Ofis manzili", officeSoon: "Manzil tez orada qo'shiladi. Hozircha mashinani o'zingiz aytgan manzilga yetkazib beramiz.",
     supportTitle: "Yo'lda savol tug'ildimi?", supportText: "Ijara davomida istalgan savol bo'yicha menejerga 24/7 qo'ng'iroq qiling.",
-    supportBtn: "Menejer bilan bog'lanish",
+    supportBtn: "Menejer bilan bog'lanish", privacy: "Maxfiylik siyosati",
   },
 };
 
@@ -196,7 +196,7 @@ const ru: Dict = {
     ],
     officeTitle: "Адрес офиса", officeSoon: "Адрес скоро появится. Пока мы доставим автомобиль по вашему адресу.",
     supportTitle: "Вопрос в дороге?", supportText: "Во время аренды звоните менеджеру 24/7 по любому вопросу.",
-    supportBtn: "Связаться с менеджером",
+    supportBtn: "Связаться с менеджером", privacy: "Политика конфиденциальности",
   },
 };
 

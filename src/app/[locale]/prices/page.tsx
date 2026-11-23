@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/db";
 import { getDict, type Locale } from "@/lib/i18n";
 import { formatSum } from "@/lib/format";
@@ -11,7 +12,7 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: Locale }> }): Promise<Metadata> {
   const { locale } = await params;
-  return { title: getDict(locale).prices.title };
+  return pageMeta(locale, "/prices", { title: getDict(locale).prices.title });
 }
 
 export default async function PricesPage({ params }: { params: Promise<{ locale: Locale }> }) {

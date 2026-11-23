@@ -180,6 +180,7 @@ const uz = {
     links: "Tezkor havolalar",
     contact: "Aloqa",
     rights: "Barcha huquqlar himoyalangan.",
+    privacy: "Maxfiylik siyosati",
   },
 };
 
@@ -359,6 +360,7 @@ const ru: Dict = {
     links: "Быстрые ссылки",
     contact: "Контакты",
     rights: "Все права защищены.",
+    privacy: "Политика конфиденциальности",
   },
 };
 
