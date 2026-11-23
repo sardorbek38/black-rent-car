@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { BookingStatus, CarClass, BodyType, Fuel, CarStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { findConflict, lockCar } from "@/lib/availability";
-import { ADMIN_COOKIE, checkPassword, cookieOptions, createToken, verifyToken } from "@/lib/auth";
+import { checkAdminPassword, resetAdminPassword } from "@/lib/adminPassword";
+import { ADMIN_COOKIE, cookieOptions, createToken, verifyToken } from "@/lib/auth";
 
 async function requireAdmin() {
   const ok = await verifyToken((await cookies()).get(ADMIN_COOKIE)?.value);
@@ -14,12 +15,19 @@ async function requireAdmin() {
 
 export async function login(_: { error?: string } | undefined, fd: FormData) {
   const pw = String(fd.get("password") ?? "");
-  if (!checkPassword(pw)) {
+  if (!(await checkAdminPassword(pw))) {
     await new Promise((r) => setTimeout(r, 800));
     return { error: "Parol noto'g'ri" };
   }
   (await cookies()).set(ADMIN_COOKIE, await createToken(), cookieOptions);
   redirect("/admin");
+}
+
+export async function sendNewPassword(): Promise<{ error?: string; info?: string }> {
+  const r = await resetAdminPassword();
+  if (r === "wait") return { error: "Yangi parol yaqinda yuborilgan. 10 daqiqadan keyin qayta urinib ko'ring" };
+  if (r === "no_telegram") return { error: "Telegram'ga yuborib bo'lmadi, parol o'zgarmadi" };
+  return { info: "Yangi parol egasining Telegramiga yuborildi" };
 }
 
 export async function logout() {
