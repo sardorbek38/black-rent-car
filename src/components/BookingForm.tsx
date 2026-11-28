@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Dict, Locale } from "@/lib/i18n";
 import { dailyRate, formatSum, rentalDays } from "@/lib/format";
@@ -42,13 +42,23 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
   const end = sp.get("end") ?? undefined;
   const f = t.form;
   const [form, setForm] = useState({
-    name: "", phone: "", startAt: initial(start, 1), endAt: initial(end, 2),
+    // Sanalar faqat brauzerda qo'yiladi: sahifa oldindan (eski sanada) tayyorlanadi
+    name: "", phone: "", startAt: "", endAt: "",
     pickupType: "OFFICE" as "OFFICE" | "DELIVERY", address: "", comment: "", website: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState<BusyRange[] | null>(null);
   const [pickNext, setPickNext] = useState<"start" | "end">("start");
+  const [datesTouched, setDatesTouched] = useState(false);
+  const alertRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (Object.values(errors).some(Boolean)) alertRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [errors]);
+
+  useEffect(() => {
+    setForm((p) => ({ ...p, startAt: initial(start, 1), endAt: initial(end, 2) }));
+  }, [start, end]);
 
   // Band vaqtlar har safar yangidan olinadi (sahifa keshlanadi, bandlik keshlanmasin)
   const loadBusy = useCallback(async () => {
@@ -69,6 +79,21 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
   const rate = days ? dailyRate(car, days) : null;
   const conflict = !!(busy && days && rangeBlocked(busy, new Date(form.startAt), new Date(form.endAt)));
 
+  // Taklif qilingan sanalar band bo'lsa (mijoz hali o'zi tanlamagan), eng yaqin bo'sh kunlarga suramiz
+  useEffect(() => {
+    if (datesTouched || !busy || !conflict) return;
+    const s0 = new Date(form.startAt), e0 = new Date(form.endAt);
+    const len = e0.getTime() - s0.getTime();
+    for (let k = 1; k <= 90; k++) {
+      const s = new Date(s0.getFullYear(), s0.getMonth(), s0.getDate() + k, s0.getHours(), s0.getMinutes());
+      const e = new Date(s.getTime() + len);
+      if (!rangeBlocked(busy, s, e)) {
+        setForm((p) => ({ ...p, startAt: toLocalInput(s), endAt: toLocalInput(e) }));
+        return;
+      }
+    }
+  }, [busy, conflict, datesTouched, form.startAt, form.endAt]);
+
   function pickDay(day: Date) {
     const startDay = new Date(form.startAt);
     const sameAsStart = startDay.toDateString() === day.toDateString();
@@ -80,11 +105,14 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
       setForm((p) => ({ ...p, endAt: withDate(p.endAt, day) }));
       setPickNext("start");
     }
+    setDatesTouched(true);
     setErrors((e) => ({ ...e, startAt: "", endAt: "", form: "" }));
   }
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (k === "startAt" || k === "endAt") setDatesTouched(true);
     setForm((p) => ({ ...p, [k]: k === "phone" ? formatPhoneInput(e.target.value) : e.target.value }));
+  };
 
   function validate() {
     const er: Record<string, string> = {};
@@ -227,7 +255,11 @@ export function BookingForm({ car, locale, t }: { car: CarPrices; locale: Locale
         </div>
       </div>
 
-      {errors.form && <p className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{errors.form}</p>}
+      {/* Xato tugma yonida ham ko'rinsin: telefonda maydonning o'zi ekrandan tashqarida qolishi mumkin */}
+      {(() => {
+        const msg = errors.form || ["name", "phone", "startAt", "endAt", "address"].map((k) => errors[k]).find(Boolean);
+        return msg ? <p ref={alertRef} role="alert" className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{msg}</p> : null;
+      })()}
       <button className="btn-gold w-full !py-4" disabled={sending}>
         {sending ? f.sending : f.submit}
         {!sending && <Icon name="arrow_forward" className="!text-[18px]" />}
