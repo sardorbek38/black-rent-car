@@ -6,7 +6,8 @@ export const site = {
   instagram: "black.rent.cars",
   instagramHref: "https://instagram.com/black.rent.cars",
   telegram: null as string | null, // masalan "blackrentcar"
-  address: null as { uz: string; ru: string } | null,
+  // VAQTINCHA manzil: mijoz haqiqiy manzilni bermaguncha
+  address: { uz: "Toshkent sh., Amir Temur shoh ko'chasi", ru: "г. Ташкент, проспект Амира Темура" } as { uz: string; ru: string } | null,
   hours: "24/7",
 };
 

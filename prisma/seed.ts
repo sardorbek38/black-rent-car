@@ -34,6 +34,19 @@ const cars: {
     ru: "Большой премиальный SUV: 6 мест, для дальних поездок и делегаций." },
 ];
 
+// VAQTINCHA narxlar (so'm): Toshkent bozoriga yaqin taxmin, mijoz haqiqiy narxni bermaguncha.
+// Faqat narxi bo'sh mashinalarga qo'yiladi, admin paneldagi o'zgarishlarni bosib ketmaydi.
+const placeholderPrices: Record<string, [day: number, d3: number, d7: number, deposit: number]> = {
+  "chevrolet-lacetti": [350_000, 320_000, 300_000, 1_000_000],
+  "chevrolet-monza": [450_000, 420_000, 400_000, 1_500_000],
+  "chevrolet-malibu": [600_000, 550_000, 500_000, 2_000_000],
+  "byd-chazor": [600_000, 550_000, 500_000, 2_000_000],
+  "byd-champion": [700_000, 650_000, 600_000, 2_000_000],
+  "byd-han": [900_000, 850_000, 800_000, 3_000_000],
+  "bmw-i3-35l": [1_000_000, 950_000, 900_000, 3_000_000],
+  "li-auto-l9": [1_500_000, 1_400_000, 1_300_000, 5_000_000],
+};
+
 async function main() {
   for (const [i, c] of cars.entries()) {
     const images = ["main", "front", "rear", "poster"].map((n) => `/cars/${c.slug}/${n}.webp`);
@@ -42,6 +55,9 @@ async function main() {
       automatic: c.automatic, seats: c.seats, descriptionUz: c.uz, descriptionRu: c.ru, images, sortOrder: i,
     };
     await prisma.car.upsert({ where: { slug: c.slug }, update: {}, create: { slug: c.slug, ...data } });
+  }
+  for (const [slug, [pricePerDay, price3Days, price7Days, deposit]] of Object.entries(placeholderPrices)) {
+    await prisma.car.updateMany({ where: { slug, pricePerDay: null }, data: { pricePerDay, price3Days, price7Days, deposit } });
   }
   console.log(`Seeded ${cars.length} cars`);
 }
